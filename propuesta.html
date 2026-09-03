@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para Miqui</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: linear-gradient(135deg, #ffd6e8 0%, #ffb3d1 50%, #ff8fb3 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* ---------- Escenas de texto inicial ---------- */
+  #intro-screen, #wait-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #intro-screen h1 {
+    font-size: clamp(2rem, 8vw, 4rem);
+    color: #8b1a4a;
+    opacity: 0;
+    animation: fadeInOut 3s ease forwards;
+    text-shadow: 2px 2px 8px rgba(255,255,255,0.5);
+  }
+
+  #wait-screen {
+    opacity: 0;
+  }
+
+  #wait-screen h1 {
+    font-size: clamp(1.4rem, 5.5vw, 2.6rem);
+    color: #8b1a4a;
+    text-shadow: 2px 2px 8px rgba(255,255,255,0.5);
+    line-height: 1.4;
+  }
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    15% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-10px); }
+  }
+
+  @keyframes fadeInOutSlow {
+    0% { opacity: 0; transform: translateY(10px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-10px); }
+  }
+
+  .hidden { display: none !important; }
+
+  /* ---------- Sobre ---------- */
+  #envelope-scene {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+
+  #envelope-scene.show {
+    display: flex;
+    opacity: 1;
+  }
+
+  .envelope-wrap {
+    position: relative;
+    width: min(320px, 85vw);
+    height: min(220px, 60vw);
+    cursor: pointer;
+    animation: floaty 3s ease-in-out infinite;
+  }
+
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .envelope {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #f8e8d8;
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(139, 26, 74, 0.4);
+    overflow: visible;
+  }
+
+  .envelope-back {
+    position: absolute;
+    inset: 0;
+    background: #f3d9c4;
+    border-radius: 6px;
+    clip-path: polygon(0 0, 50% 45%, 100% 0, 100% 100%, 0 100%);
+  }
+
+  .envelope-flap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(0 0, 50% 45%, 100% 0);
+    background: linear-gradient(135deg, #e8a5c0, #d1487f);
+    transform-origin: top;
+    transition: transform 0.8s ease;
+    z-index: 5;
+    border-radius: 6px 6px 0 0;
+  }
+
+  .envelope-wrap.open .envelope-flap {
+    transform: rotateX(180deg);
+    z-index: 1;
+  }
+
+  .heart-seal {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    z-index: 6;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    transition: opacity 0.4s ease;
+  }
+
+  .envelope-wrap.open .heart-seal {
+    opacity: 0;
+  }
+
+  .letter-inside {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    width: 88%;
+    height: 40%;
+    background: #fffdf7;
+    border-radius: 4px;
+    box-shadow: 0 -2px 6px rgba(0,0,0,0.15);
+    z-index: 2;
+    transition: transform 0.8s ease 0.3s;
+  }
+
+  .envelope-wrap.open .letter-inside {
+    transform: translateX(-50%) translateY(-140%);
+    z-index: 4;
+  }
+
+  .envelope-hint {
+    text-align: center;
+    color: #7a1240;
+    margin-top: 20px;
+    font-size: 1rem;
+    font-style: italic;
+  }
+
+  /* ---------- Carta modal ---------- */
+  #letter-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(139, 26, 74, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 20px;
+  }
+
+  #letter-modal.show {
+    display: flex;
+  }
+
+  .letter-card {
+    background: #fffdf7;
+    background-image: repeating-linear-gradient(#fffdf7, #fffdf7 34px, #f4e6d8 35px);
+    border-radius: 8px;
+    padding: 40px 30px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    text-align: center;
+    position: relative;
+    animation: popIn 0.5s ease;
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .letter-card h2 {
+    color: #8b1a4a;
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+    margin-bottom: 30px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffe4ef;
+    padding: 12px 24px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: 2px solid transparent;
+    font-size: 1.1rem;
+    color: #8b1a4a;
+    font-weight: bold;
+    width: 200px;
+    justify-content: center;
+  }
+
+  .option:hover {
+    background: #ffb3d1;
+    transform: scale(1.05);
+    border-color: #d1487f;
+  }
+
+  .option input {
+    width: 20px;
+    height: 20px;
+    accent-color: #d1487f;
+    cursor: pointer;
+  }
+
+  /* ---------- Corazones flotantes ---------- */
+  .floating-heart {
+    position: fixed;
+    bottom: -50px;
+    font-size: 1.8rem;
+    z-index: 100;
+    pointer-events: none;
+    animation: floatUp linear forwards;
+  }
+
+  @keyframes floatUp {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* ---------- Botón LEER ---------- */
+  #read-btn-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: 30px;
+  }
+
+  #read-btn-wrap.show {
+    display: flex;
+  }
+
+  .read-msg {
+    color: #8b1a4a;
+    font-size: 1.1rem;
+    text-align: center;
+  }
+
+  #read-btn {
+    background: linear-gradient(135deg, #d1487f, #8b1a4a);
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    font-size: 1.2rem;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(139, 26, 74, 0.4);
+    transition: transform 0.2s ease;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  #read-btn:hover {
+    transform: scale(1.08);
+  }
+
+  /* ---------- Mensaje final ---------- */
+  #final-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(139, 26, 74, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    padding: 20px;
+  }
+
+  #final-modal.show {
+    display: flex;
+  }
+
+  .final-card {
+    background: #fffdf7;
+    border-radius: 10px;
+    padding: 40px 30px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: popIn 0.6s ease;
+  }
+
+  .final-card p {
+    color: #7a1240;
+    font-size: clamp(1rem, 4vw, 1.25rem);
+    line-height: 1.8;
+    font-style: italic;
+  }
+
+  .final-card .signature {
+    margin-top: 20px;
+    font-size: 1.5rem;
+    color: #d1487f;
+  }
+</style>
+</head>
+<body>
+
+<!-- Escena 1: Hola miqui -->
+<div id="intro-screen">
+  <h1>Hola Miqui 💕</h1>
+</div>
+
+<!-- Escena 2: mensaje de espera -->
+<div id="wait-screen" class="hidden">
+  <h1>Este momento lo estuvimos esperando mucho tiempo...</h1>
+</div>
+
+<!-- Escena 3: sobre -->
+<div id="envelope-scene">
+  <div>
+    <div class="envelope-wrap" id="envelopeWrap" onclick="openEnvelope()">
+      <div class="envelope">
+        <div class="envelope-back"></div>
+        <div class="letter-inside"></div>
+        <div class="envelope-flap"></div>
+        <div class="heart-seal">💌</div>
+      </div>
+    </div>
+    <p class="envelope-hint" id="envelopeHint">Tocá el sobre para abrirlo</p>
+  </div>
+</div>
+
+<!-- Modal de la carta -->
+<div id="letter-modal">
+  <div class="letter-card">
+    <h2>¿Querés ser mi novia?</h2>
+    <div class="options">
+      <label class="option">
+        <input type="radio" name="respuesta" onclick="sayYes()"> SI
+      </label>
+      <label class="option">
+        <input type="radio" name="respuesta" onclick="sayYes()"> SI
+      </label>
+    </div>
+    <div id="read-btn-wrap">
+      <p class="read-msg">💗</p>
+      <button id="read-btn" onclick="showFinal()">LEER</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mensaje final -->
+<div id="final-modal">
+  <div class="final-card">
+    <p>Ya no somos los adolescentes de antes, ambos tenemos metas y objetivos claros, sin embargo una de mis metas es estar toda mi vida con vos. En esta nueva etapa prometo hacerte feliz y darte el amor que te mereces, quiero verte feliz y estar a tu lado en cada momento de tu vida.</p>
+    <p class="signature">Te amo 💖</p>
+  </div>
+</div>
+
+<script>
+  // Escena 1 -> Escena 2
+  setTimeout(() => {
+    document.getElementById('intro-screen').classList.add('hidden');
+    const waitScreen = document.getElementById('wait-screen');
+    waitScreen.classList.remove('hidden');
+    waitScreen.style.animation = 'fadeInOutSlow 4s ease forwards';
+  }, 3000);
+
+  // Escena 2 -> Escena 3 (sobre)
+  setTimeout(() => {
+    document.getElementById('wait-screen').classList.add('hidden');
+    document.getElementById('envelope-scene').classList.add('show');
+  }, 7000);
+
+  function openEnvelope() {
+    const wrap = document.getElementById('envelopeWrap');
+    if (wrap.classList.contains('open')) return;
+    wrap.classList.add('open');
+    document.getElementById('envelopeHint').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('letter-modal').classList.add('show');
+    }, 900);
+  }
+
+  let alreadyYes = false;
+  function sayYes() {
+    if (alreadyYes) return;
+    alreadyYes = true;
+    launchHearts();
+    setTimeout(() => {
+      document.getElementById('read-btn-wrap').classList.add('show');
+    }, 800);
+  }
+
+  function launchHearts() {
+    const heartsArr = ['❤️','💕','💖','💗','💓','💘','💝'];
+    const total = 60;
+    for (let i = 0; i < total; i++) {
+      setTimeout(() => {
+        const heart = document.createElement('div');
+        heart.className = 'floating-heart';
+        heart.textContent = heartsArr[Math.floor(Math.random() * heartsArr.length)];
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.fontSize = (1 + Math.random() * 1.8) + 'rem';
+        const duration = 3 + Math.random() * 3;
+        heart.style.animationDuration = duration + 's';
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), duration * 1000);
+      }, i * 80);
+    }
+  }
+
+  function showFinal() {
+    document.getElementById('letter-modal').classList.remove('show');
+    document.getElementById('final-modal').classList.add('show');
+    launchHearts();
+  }
+</script>
+
+</body>
+</html>
